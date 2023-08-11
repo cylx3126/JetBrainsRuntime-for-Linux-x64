@@ -78,7 +78,6 @@ jobs:
     - name: Download BOOT_JDK
       id: download_boot_jdk
       run: |
-          cd JetBrainsRuntime
           curl -LO https://corretto.aws/downloads/latest/amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz
 
           tar zxvf amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
