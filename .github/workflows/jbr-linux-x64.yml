@@ -55,7 +55,7 @@ jobs:
         echo "Build Number: $build_number"
         echo build_number="$build_number" >> $GITHUB_OUTPUT
 
-        ref='${{ github.event.inputs.release_tag }}'
+        ref='${{ github.event.inputs.jbr_release_tag }}'
         echo "Ref: $ref"
         echo ref="$ref" >> $GITHUB_OUTPUT
 
