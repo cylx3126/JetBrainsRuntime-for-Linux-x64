@@ -64,7 +64,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y wget libunwind-dev libasound2-dev libavcodec-dev libavformat-dev libcups2-dev libgl1-mesa-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk2.0-dev libgtk-3-dev libudev-dev libxrandr-dev libxslt1-dev libxtst-dev libxxf86vm-dev x11proto-xf86vidmode-dev
+        sudo apt-get install -y aria2 wget libunwind-dev libasound2-dev libavcodec-dev libavformat-dev libcups2-dev libgl1-mesa-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk2.0-dev libgtk-3-dev libudev-dev libxrandr-dev libxslt1-dev libxtst-dev libxxf86vm-dev x11proto-xf86vidmode-dev
         sudo apt-get clean -y
 
     - name: Prepare JCEF
@@ -75,14 +75,6 @@ jobs:
         rm -f jbrsdk_jcef.tgz
         touch jcef_linux_x64/jcef.version
 
-    - name: Clone JBR Repository
-      uses: actions/checkout@v3
-      with:
-        repository: JetBrains/JetBrainsRuntime
-        ref: ${{ steps.vars.outputs.ref }}
-        fetch-depth: 0 # 这里必须拉取全部历史，下面的mkimages_x64.sh里面会通过git log找tag
-        path: JetBrainsRuntime
-
     - name: Download BOOT_JDK
       id: download_boot_jdk
       run: |
@@ -91,7 +83,21 @@ jobs:
 
           tar zxvf amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
 
-          ls | grep 'amazon-corretto-*' | grep -v 'tar.gz' | xargs -I {} mv {} /home/runner/boot_jdk
+          rm amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
+
+          ls | grep 'amazon-corretto-*' | xargs -I {} realpath {} | xargs -I {} echo boot_jdk_home={} >> tmp_boot_jdk
+
+          echo $(cat tmp_boot_jdk) >> $GITHUB_OUTPUT
+
+          echo BOOT_JDK=${{ steps.vars.outputs.boot_jdk_home }}
+
+    - name: Clone JBR Repository
+      uses: actions/checkout@v3
+      with:
+        repository: JetBrains/JetBrainsRuntime
+        ref: ${{ steps.vars.outputs.ref }}
+        fetch-depth: 0 # 这里必须拉取全部历史，下面的mkimages_x64.sh里面会通过git log找tag
+        path: JetBrainsRuntime
 
     - name: Patch & Compile JetBrainsRuntime with JCEF
       id: compile
@@ -103,7 +109,7 @@ jobs:
 
         mv ../jcef_linux_x64 ./
 
-        export BOOT_JDK=/home/runner/boot_jdk
+        export BOOT_JDK=${{ steps.vars.outputs.boot_jdk_home }}
 
         jb/project/tools/linux/scripts/mkimages_x64.sh '${{ steps.vars.outputs.build_number }}' jcef
 
@@ -112,8 +118,6 @@ jobs:
     - name: Create Release
       id: create_release
       uses: ncipollo/release-action@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         allowUpdates: true
         artifacts: ${{ steps.vars.outputs.jbr_image }}
@@ -122,15 +126,4 @@ jobs:
         body: ${{ steps.vars.outputs.release_body }}
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: JetBrainsRuntime/${{ steps.compile.outputs.jbr_image }}
-        asset_name: ${{ steps.compile.outputs.jbr_image }}
-        asset_content_type: application/gzip
 
