@@ -7,7 +7,7 @@ on:
         required: true
         default: 'latest'
         type: string
-        description: "Release id or tag"
+        description: "Release tag"
       jbr_branch:
         required: false
         type: string
@@ -24,7 +24,7 @@ jobs:
       id: vars
       run: |
         release_id='${{ github.event.inputs.release_id }}'
-        curl -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -sfL -m 60 -o /tmp/latest.json "${{ github.api_url }}/repos/JetBrains/JetBrainsRuntime/releases/${release_id:-latest}"
+        curl -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -sfL -m 60 -o /tmp/latest.json "${{ github.api_url }}/repos/JetBrains/JetBrainsRuntime/releases/tags/${release_id}"
 
         release_name=$(jq -r .name /tmp/latest.json)
         echo "Release: $release_name"
