@@ -3,19 +3,16 @@ name: jbr-linux-x64
 on:
   workflow_dispatch:
     inputs:
-      release_id:
+      jbr_release_tag:
         required: true
-        default: 'latest'
+        default: "jbr-release-17.0.8b1000.8"
         type: string
-        description: "Release tag"
-      jbr_branch:
-        required: false
-        type: string
-        description: "JBR branch"
-      amazon_corretto_version:
+        description: "JetBrainsRuntime Release tag"
+      boot_jdk_version:
         required: true
+        default: '20'
         type: string
-        description: "amazon_corretto_version"
+        description: "amazon corretto version for compile jbr"
 
 jobs:
   build:
@@ -27,7 +24,7 @@ jobs:
     - name: Generate Variables
       id: vars
       run: |
-        release_id='${{ github.event.inputs.release_id }}'
+        release_id='${{ github.event.inputs.jbr_release_tag }}'
         curl -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -sfL -m 60 -o /tmp/latest.json "${{ github.api_url }}/repos/JetBrains/JetBrainsRuntime/releases/tags/${release_id}"
 
         release_name=$(jq -r .name /tmp/latest.json)
@@ -58,10 +55,7 @@ jobs:
         echo "Build Number: $build_number"
         echo build_number="$build_number" >> $GITHUB_OUTPUT
 
-        ref='${{ github.event.inputs.jbr_branch }}'
-        if [[ -z "$ref" ]]; then
-          ref="jb${JBSDK_VERSION}-b${build_number}"
-        fi
+        ref='${{ github.event.inputs.release_tag }}'
         echo "Ref: $ref"
         echo ref="$ref" >> $GITHUB_OUTPUT
 
@@ -92,9 +86,9 @@ jobs:
       id: download_boot_jdk
       run: |
           cd JetBrainsRuntime
-          curl -LO https://corretto.aws/downloads/latest/amazon-corretto-${{ github.event.inputs.amazon_corretto_version }}-x64-linux-jdk.tar.gz
+          curl -LO https://corretto.aws/downloads/latest/amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz
 
-          tar zxvf amazon-corretto-${{ github.event.inputs.amazon_corretto_version }}-x64-linux-jdk.tar.gz 
+          tar zxvf amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
 
           ls | grep 'amazon-corretto-*' | grep -v 'tar.gz' | xargs -I {} mv {} /home/runner/boot_jdk
 
