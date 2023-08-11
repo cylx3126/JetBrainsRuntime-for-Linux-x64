@@ -32,15 +32,15 @@ jobs:
 
         release_name=$(jq -r .name /tmp/latest.json)
         echo "Release: $release_name"
-        echo ::set-output name=release_name::"$release_name"
+        echo release_name="$release_name" >> $GITHUB_OUTPUT
 
         html_url=$(jq -r .html_url /tmp/latest.json)
         echo "Release URL: $html_url"
-        echo ::set-output name=release_body::"$html_url"
+        echo release_body="$html_url" >> $GITHUB_OUTPUT
 
         tag_name=$(jq -r .tag_name /tmp/latest.json)
         echo "Tag: $tag_name"
-        echo ::set-output name=tag_name::"$tag_name"
+        echo tag_name="$tag_name" >> $GITHUB_OUTPUT
 
         if [[ "$tag_name" == jbr17* ]]; then
           JBSDK_VERSION=$(sed -E 's/^jbr([0-9_.]+)b.*$/\1/' <<< "$tag_name")
@@ -54,16 +54,16 @@ jobs:
         fi
 
         echo "JBSDK Version: $JBSDK_VERSION"
-        echo ::set-output name=JBSDK_VERSION::"$JBSDK_VERSION"
+        echo JBSDK_VERSION="$JBSDK_VERSION" >> $GITHUB_OUTPUT
         echo "Build Number: $build_number"
-        echo ::set-output name=build_number::"$build_number"
+        echo build_number="$build_number" >> $GITHUB_OUTPUT
 
         ref='${{ github.event.inputs.jbr_branch }}'
         if [[ -z "$ref" ]]; then
           ref="jb${JBSDK_VERSION}-b${build_number}"
         fi
         echo "Ref: $ref"
-        echo ::set-output name=ref::"$ref"
+        echo ref="$ref" >> $GITHUB_OUTPUT
 
     - name: Init Build Dependencies
       env:
@@ -88,7 +88,7 @@ jobs:
         fetch-depth: 0 # 这里必须拉取全部历史，下面的mkimages_x64.sh里面会通过git log找tag
         path: JetBrainsRuntime
 
-    - name: DOWNLOAD BOOT_JDK
+    - name: Download BOOT_JDK
       id: download_boot_jdk
       run: |
           cd JetBrainsRuntime
@@ -96,7 +96,7 @@ jobs:
 
           tar zxvf amazon-corretto-${{ github.event.inputs.amazon_corretto_version }}-x64-linux-jdk.tar.gz 
 
-          ls | grep 'amazon-corretto-*' | grep -v 'tar.gz' | xargs -I {} mv {} /usr/local/boot_jdk
+          ls | grep 'amazon-corretto-*' | grep -v 'tar.gz' | xargs -I {} mv {} /home/runner/boot_jdk
 
     - name: Patch & Compile JetBrainsRuntime with JCEF
       id: compile
@@ -108,11 +108,11 @@ jobs:
 
         mv ../jcef_linux_x64 ./
 
-        export BOOT_JDK=/usr/local/boot_jdk
+        export BOOT_JDK=/home/runner/
 
         jb/project/tools/linux/scripts/mkimages_x64.sh '${{ steps.vars.outputs.build_number }}' jcef
 
-        echo ::set-output name=jbr_image::"$(ls -1 jbr_jcef-*-linux-x64-*.tar.gz)"
+        echo jbr_image="$(ls -1 jbr_jcef-*-linux-x64-*.tar.gz)" >> $GITHUB_OUTPUT
 
     - name: Create Release
       id: create_release
