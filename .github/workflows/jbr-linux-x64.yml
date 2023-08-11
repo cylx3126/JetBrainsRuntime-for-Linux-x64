@@ -12,6 +12,10 @@ on:
         required: false
         type: string
         description: "JBR branch"
+      amazon_corretto_version:
+        required: true
+        type: string
+        description: "amazon_corretto_version"
 
 jobs:
   build:
@@ -66,7 +70,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y libunwind-dev libasound2-dev libavcodec-dev libavformat-dev libcups2-dev libgl1-mesa-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk2.0-dev libgtk-3-dev libudev-dev libxrandr-dev libxslt1-dev libxtst-dev libxxf86vm-dev x11proto-xf86vidmode-dev
+        sudo apt-get install -y wget libunwind-dev libasound2-dev libavcodec-dev libavformat-dev libcups2-dev libgl1-mesa-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk2.0-dev libgtk-3-dev libudev-dev libxrandr-dev libxslt1-dev libxtst-dev libxxf86vm-dev x11proto-xf86vidmode-dev
         sudo apt-get clean -y
 
     - name: Prepare JCEF
@@ -84,6 +88,16 @@ jobs:
         fetch-depth: 0 # 这里必须拉取全部历史，下面的mkimages_x64.sh里面会通过git log找tag
         path: JetBrainsRuntime
 
+    - name: DOWNLOAD BOOT_JDK
+      id: download_boot_jdk
+      run: |
+          cd JetBrainsRuntime
+          curl -LO https://corretto.aws/downloads/latest/amazon-corretto-${{ github.event.inputs.amazon_corretto_version }}-x64-linux-jdk.tar.gz
+
+          tar zxvf amazon-corretto-${{ github.event.inputs.amazon_corretto_version }}-x64-linux-jdk.tar.gz 
+
+          ls | grep 'amazon-corretto-*' | grep -v 'tar.gz' | xargs -I {} mv {} /usr/local/boot_jdk
+
     - name: Patch & Compile JetBrainsRuntime with JCEF
       id: compile
       run: |
@@ -94,7 +108,7 @@ jobs:
 
         mv ../jcef_linux_x64 ./
 
-        export BOOT_JDK="$JAVA_HOME_17_X64"
+        export BOOT_JDK=/usr/local/boot_jdk
 
         jb/project/tools/linux/scripts/mkimages_x64.sh '${{ steps.vars.outputs.build_number }}' jcef
 
