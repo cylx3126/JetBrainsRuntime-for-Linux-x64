@@ -8,11 +8,6 @@ on:
         default: "jbr-release-17.0.8b1000.8"
         type: string
         description: "JetBrainsRuntime Release tag"
-      boot_jdk_version:
-        required: true
-        default: '17'
-        type: string
-        description: "amazon corretto version for compile jbr"
 
 jobs:
   build:
@@ -75,21 +70,6 @@ jobs:
         rm -f jbrsdk_jcef.tgz
         touch jcef_linux_x64/jcef.version
 
-    - name: Download BOOT_JDK
-      id: download_boot_jdk
-      run: |
-          curl -LO https://corretto.aws/downloads/latest/amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz
-
-          tar zxvf amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
-
-          rm amazon-corretto-${{ github.event.inputs.boot_jdk_version }}-x64-linux-jdk.tar.gz 
-
-          ls | grep 'amazon-corretto-*' | xargs -I {} realpath {} | xargs -I {} echo boot_jdk_home={} >> tmp_boot_jdk
-
-          echo $(cat tmp_boot_jdk) >> $GITHUB_OUTPUT
-
-          echo BOOT_JDK=${{ steps.vars.outputs.boot_jdk_home }}
-
     - name: Clone JBR Repository
       uses: actions/checkout@v3
       with:
@@ -108,7 +88,7 @@ jobs:
 
         mv ../jcef_linux_x64 ./
 
-        export BOOT_JDK=${{ steps.vars.outputs.boot_jdk_home }}
+        export BOOT_JDK=${BOOT_JDK_HOME}
 
         jb/project/tools/linux/scripts/mkimages_x64.sh '${{ steps.vars.outputs.build_number }}' jcef
 
