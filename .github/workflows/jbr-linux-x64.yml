@@ -10,7 +10,7 @@ on:
         description: "JetBrainsRuntime Release tag"
       boot_jdk_version:
         required: true
-        default: '20'
+        default: '17'
         type: string
         description: "amazon corretto version for compile jbr"
 
