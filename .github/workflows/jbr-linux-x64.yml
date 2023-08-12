@@ -12,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Clone Repository
       uses: actions/checkout@v3
@@ -92,7 +94,7 @@ jobs:
 
         jb/project/tools/linux/scripts/mkimages_x64.sh '${{ steps.vars.outputs.build_number }}' jcef
 
-        echo jbr_image="$(ls -1 jbr_jcef-*-linux-x64-*.tar.gz)" >> $GITHUB_OUTPUT
+        echo jbr_image="JetBrainsRuntime/$(ls -1 jbr_jcef-*-linux-x64-*.tar.gz)" >> $GITHUB_OUTPUT
 
     - name: Create Release
       id: create_release
@@ -101,8 +103,8 @@ jobs:
         allowUpdates: true
         artifacts: ${{ steps.vars.outputs.jbr_image }}
         tag: ${{ steps.vars.outputs.tag_name }}
-        name:  ${{ steps.vars.outputs.release_name }}
+        name:  ${{ steps.vars.outputs.tag_name }}
         body: ${{ steps.vars.outputs.release_body }}
         draft: false
         prerelease: false
-
+        artifactErrorsFailBuild: true
